@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:task="http://www.springframework.org/schema/task"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://www.springframework.org/schema/tx
+	http://www.springframework.org/schema/tx/spring-tx.xsd
+	http://www.springframework.org/schema/aop
+	http://www.springframework.org/schema/aop/spring-aop.xsd
+	http://www.springframework.org/schema/task
+    http://www.springframework.org/schema/task/spring-task.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd"
+       default-lazy-init="false">
+
+    <!-- 定义受环境影响易变的变量 -->
+    <bean id="placeholderConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="location" value="classpath:application.properties"/>
+        <property name="fileEncoding" value="utf-8" />
+    </bean>
+
+
+    <!-- 使用annotation 自动注册bean,并保证@Required,@Autowired的属性被注入 -->
+    <context:component-scan base-package="org.alan.asdk"/>
+    <context:annotation-config/>
+
+    <!-- 数据源配置,使用应用内的DBCP数据库连接池 -->
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+        <!-- Connection Info -->
+        <property name="driverClassName" value="${jdbc.driver}"/>
+        <property name="url" value="${jdbc.url}"/>
+        <property name="username" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+
+        <!-- Connection Pooling Info -->
+        <property name="initialSize" value="20"/>
+        <property name="maxActive" value="30"/>
+        <property name="maxIdle" value="10"/>
+        <property name="maxWait" value="500"/>
+        <property name="defaultAutoCommit" value="true"/>
+
+        <!-- 测试连接是否有效的sql-->
+        <property name= "validationQuery" value="select 1" />
+        <!-- 检查连接池中空闲的连接的频率：毫秒-->
+        <property name= "timeBetweenEvictionRunsMillis" value="30000" />
+        <!-- 每次检查空闲连接的个数-->
+        <property name= "numTestsPerEvictionRun" value="30" />
+    </bean>
+    <!--<bean id="dataSource" class="com.jolbox.bonecp.BoneCPDataSource" destroy-method="close">-->
+        <!--&lt;!&ndash; Connection Info &ndash;&gt;-->
+        <!--<property name="driverClass" value="${jdbc.driver}"/>-->
+        <!--<property name="jdbcUrl" value="${jdbc.url}"/>-->
+        <!--<property name="username" value="${jdbc.username}"/>-->
+        <!--<property name="password" value="${jdbc.password}"/>-->
+
+        <!--&lt;!&ndash; Connection Pooling Info &ndash;&gt;-->
+        <!--&lt;!&ndash;分区个数&ndash;&gt;-->
+        <!--<property name="partitionCount" value="10"/>-->
+        <!--&lt;!&ndash;每个分区含有connection最大个数&ndash;&gt;-->
+        <!--<property name="maxConnectionsPerPartition" value="25"/>-->
+        <!--&lt;!&ndash; 设置每个分区含有connection最小个数&ndash;&gt;-->
+        <!--<property name="minConnectionsPerPartition" value="1"/>-->
+        <!--&lt;!&ndash;每个分区至少维持N%数量的可用&ndash;&gt;-->
+        <!--<property name="poolAvailabilityThreshold" value="20"/>-->
+        <!--&lt;!&ndash;connection超时的时间 单位MS&ndash;&gt;-->
+        <!--<property name="connectionTimeoutInMs" value="500"/>-->
+
+
+        <!--<property name="defaultAutoCommit" value="true"/>-->
+    <!--</bean>-->
+
+    <!-- Hibernate配置 -->
+    <bean id="sessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="hibernateProperties">
+            <props>
+                <prop key="hibernate.dialect">${hibernate.dialect}</prop>
+                <prop key="hibernate.show_sql">${hibernate.show_sql}</prop>
+                <!--<prop key="hibernate.hbm2ddl.auto">${hibernate.hbm2ddl.auto}</prop>-->
+                <!--<prop key="hibernate.current_session_context_class">${hibernate.current_session_context_class}</prop>-->
+            </props>
+        </property>
+        <property name="packagesToScan" value="org.alan.asdk.entity"/>
+    </bean>
+
+    <!-- 事务管理器配置,单数据源事务 -->
+    <bean id="txManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+        <property name="sessionFactory" ref="sessionFactory"/>
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <tx:advice id="txAdvice" transaction-manager="txManager">
+        <tx:attributes>
+            <tx:method name="get*" read-only="true"/>
+            <tx:method name="find*" read-only="true"/>
+            <tx:method name="query*" read-only="true"/>
+            <tx:method name="is*" read-only="true"/>
+            <tx:method name="*" propagation="REQUIRED"/>
+        </tx:attributes>
+    </tx:advice>
+    <!-- 使用annotation定义事务 -->
+    <tx:annotation-driven transaction-manager="txManager" proxy-target-class="true"/>
+
+    <aop:config proxy-target-class="true">
+        <aop:advisor pointcut="execution(* org.alan.asdk.service..*Manager.*(..))" advice-ref="txAdvice"/>
+        <aop:advisor pointcut="execution(* org.alan.asdk.dao..*Dao.*(..))" advice-ref="txAdvice"/>
+    </aop:config>
+    <!--开启定时器-->
+    <task:annotation-driven/>
+
+    <!-- 验证码JCaptcha支持 -->
+    <bean id="customGenericManageableCaptchaService" class="org.alan.asdk.utils.CustomGenericManageableCaptchaService">
+    </bean>
+    <bean id="captchaEngineEx" class="org.alan.asdk.utils.CaptchaEngineEx" />
+    <!-- 邮件服务器 -->
+    <bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+        <property name="protocol" value="smtp"/>
+        <property name="host" value="${mail.host}"/>
+        <property name="port" value="${mail.port}"/>
+        <property name="username" value="${mail.username}"/>
+        <property name="password" value="${mail.password}"/>
+        <property name="javaMailProperties">
+            <props>
+                <prop key="mail.smtp.auth">true</prop>
+                <prop key="mail.smtp.starttls.enable">true</prop>
+                <prop key="mail.smtp.socketFactory.class">javax.net.ssl.SSLSocketFactory</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="taskExecutor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+        <property name="corePoolSize" value="10"/>
+        <property name="maxPoolSize" value="30"/>
+        <property name="waitForTasksToCompleteOnShutdown" value="true"/>
+    </bean>
+</beans>
