@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="asdk:war">
+    <output-path>$PROJECT_DIR$/target</output-path>
+    <root id="archive" name="asdk.war">
+      <element id="artifact" artifact-name="asdk:war exploded" />
+    </root>
+  </artifact>
+</component>
