@@ -47,28 +47,28 @@
         <!-- 每次检查空闲连接的个数-->
         <property name= "numTestsPerEvictionRun" value="30" />
     </bean>
-    <!--<bean id="dataSource" class="com.jolbox.bonecp.BoneCPDataSource" destroy-method="close">-->
-        <!--&lt;!&ndash; Connection Info &ndash;&gt;-->
-        <!--<property name="driverClass" value="${jdbc.driver}"/>-->
-        <!--<property name="jdbcUrl" value="${jdbc.url}"/>-->
-        <!--<property name="username" value="${jdbc.username}"/>-->
-        <!--<property name="password" value="${jdbc.password}"/>-->
+    <!--<databean id="dataSource" class="com.jolbox.bonecp.BoneCPDataSource" destroy-method="close">&ndash;&gt;-->
+        <!--&lt;!&ndash;&lt;!&ndash; Connection Info &ndash;&gt;&ndash;&gt;-->
+        <!--&lt;!&ndash;<property name="driverClass" value="${jdbc.driver}"/>&ndash;&gt;-->
+        <!--&lt;!&ndash;<property name="jdbcUrl" value="${jdbc.url}"/>&ndash;&gt;-->
+        <!--&lt;!&ndash;<property name="username" value="${jdbc.username}"/>&ndash;&gt;-->
+        <!--&lt;!&ndash;<property name="password" value="${jdbc.password}"/>&ndash;&gt;-->
 
-        <!--&lt;!&ndash; Connection Pooling Info &ndash;&gt;-->
-        <!--&lt;!&ndash;分区个数&ndash;&gt;-->
-        <!--<property name="partitionCount" value="10"/>-->
-        <!--&lt;!&ndash;每个分区含有connection最大个数&ndash;&gt;-->
-        <!--<property name="maxConnectionsPerPartition" value="25"/>-->
-        <!--&lt;!&ndash; 设置每个分区含有connection最小个数&ndash;&gt;-->
-        <!--<property name="minConnectionsPerPartition" value="1"/>-->
-        <!--&lt;!&ndash;每个分区至少维持N%数量的可用&ndash;&gt;-->
-        <!--<property name="poolAvailabilityThreshold" value="20"/>-->
-        <!--&lt;!&ndash;connection超时的时间 单位MS&ndash;&gt;-->
-        <!--<property name="connectionTimeoutInMs" value="500"/>-->
+        <!--&lt;!&ndash;&lt;!&ndash; Connection Pooling Info &ndash;&gt;&ndash;&gt;-->
+        <!--&lt;!&ndash;&lt;!&ndash;分区个数&ndash;&gt;&ndash;&gt;-->
+        <!--&lt;!&ndash;<property name="partitionCount" value="10"/>&ndash;&gt;-->
+        <!--&lt;!&ndash;&lt;!&ndash;每个分区含有connection最大个数&ndash;&gt;&ndash;&gt;-->
+        <!--&lt;!&ndash;<property name="maxConnectionsPerPartition" value="25"/>&ndash;&gt;-->
+        <!--&lt;!&ndash;&lt;!&ndash; 设置每个分区含有connection最小个数&ndash;&gt;&ndash;&gt;-->
+        <!--&lt;!&ndash;<property name="minConnectionsPerPartition" value="1"/>&ndash;&gt;-->
+        <!--&lt;!&ndash;&lt;!&ndash;每个分区至少维持N%数量的可用&ndash;&gt;&ndash;&gt;-->
+        <!--&lt;!&ndash;<property name="poolAvailabilityThreshold" value="20"/>&ndash;&gt;-->
+        <!--&lt;!&ndash;&lt;!&ndash;connection超时的时间 单位MS&ndash;&gt;&ndash;&gt;-->
+        <!--&lt;!&ndash;<property name="connectionTimeoutInMs" value="500"/>&ndash;&gt;-->
 
 
-        <!--<property name="defaultAutoCommit" value="true"/>-->
-    <!--</bean>-->
+        <!--&lt;!&ndash;<property name="defaultAutoCommit" value="true"/>&ndash;&gt;-->
+    <!--<!databean>&ndash;&gt;-->
 
     <!-- Hibernate配置 -->
     <bean id="sessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">

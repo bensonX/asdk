@@ -44,7 +44,7 @@ public class MailManager {
     public void sendMailBySynchronizationMode(Mail mail) throws MessagingException {
         MimeMessage mime = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(mime);
-        helper.setFrom("tsdk.game@service.tsixi.com");
+        helper.setFrom("tsdk.game@dao.tsixi.com");
         helper.setTo(mail.getToAddress());
         helper.setSubject(mail.getSubject());
         helper.setText(mail.getContent(),true);

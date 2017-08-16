@@ -1513,7 +1513,7 @@
                     type = column.radio ? 'radio' : type;
 
                     text = [that.options.cardView ?
-                        '<div class="card-view">' : '<td class="bs-checkbox">',
+                        '<div class="sprite-view">' : '<td class="bs-checkbox">',
                         '<input' +
                         sprintf(' data-index="%s"', i) +
                         sprintf(' name="%s"', that.options.selectItemName) +
@@ -1533,7 +1533,7 @@
                     value = typeof value === 'undefined' || value === null ?
                         that.options.undefinedText : value;
 
-                    text = that.options.cardView ? ['<div class="card-view">',
+                    text = that.options.cardView ? ['<div class="sprite-view">',
                         that.options.showHeader ? sprintf('<span class="title" %s>%s</span>', style,
                             getPropertyFromOther(that.columns, 'field', 'title', field)) : '',
                         sprintf('<span class="value">%s</span>', value),
@@ -1546,7 +1546,7 @@
                     // Hide empty data on Card view when smartDisplay is set to true.
                     if (that.options.cardView && that.options.smartDisplay && value === '') {
                         // Should set a placeholder for event binding correct fieldIndex
-                        text = '<div class="card-view"></div>';
+                        text = '<div class="sprite-view"></div>';
                     }
                 }
 
@@ -1667,7 +1667,7 @@
             for (var key in events) {
                 that.$body.find('>tr:not(.no-records-found)').each(function () {
                     var $tr = $(this),
-                        $td = $tr.find(that.options.cardView ? '.card-view' : 'td').eq(fieldIndex),
+                        $td = $tr.find(that.options.cardView ? '.sprite-view' : 'td').eq(fieldIndex),
                         index = key.indexOf(' '),
                         name = key.substring(0, index),
                         el = key.substring(index + 1),

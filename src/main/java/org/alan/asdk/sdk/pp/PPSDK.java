@@ -25,7 +25,7 @@ public class PPSDK implements ISDKScript {
 
             JSONObject params = new JSONObject();
             params.put("id", System.currentTimeMillis() / 1000);
-            params.put("service", "account.verifySession");
+            params.put("dao", "account.verifySession");
 
             JSONObject data = new JSONObject();
             data.put("sid", sid);

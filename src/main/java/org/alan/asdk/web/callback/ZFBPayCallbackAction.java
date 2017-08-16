@@ -1,36 +1,25 @@
 package org.alan.asdk.web.callback;
 
-import com.alipay.api.AlipayClient;
-import com.alipay.api.domain.FriendListVO;
-import com.alipay.api.internal.util.AlipaySignature;
-import com.alipay.api.request.*;
-import com.alipay.api.response.*;
 import net.sf.json.JSON;
-import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-import org.alan.asdk.cache.impl.logic.UChannelCache;
 import org.alan.asdk.cache.impl.logic.UGameCache;
 import org.alan.asdk.common.Log;
 import org.alan.asdk.common.UActionSupport;
-import org.alan.asdk.dto.PayState;
-import org.alan.asdk.dto.StateCode;
 import org.alan.asdk.entity.UChannel;
 import org.alan.asdk.entity.UGame;
-import org.alan.asdk.entity.UOrder;
-import org.alan.asdk.entity.UUser;
-import org.alan.asdk.sdk.zhifubao.ZFBSDK;
 import org.alan.asdk.service.UOrderManager;
 import org.alan.asdk.service.UUserManager;
 import org.alan.asdk.utils.EncryptUtils;
-import org.alan.asdk.utils.IDGenerator;
-import org.alan.asdk.web.SendAgent;
 import org.apache.struts2.convention.annotation.Action;
 import org.apache.struts2.convention.annotation.Namespace;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Created on 2017/5/8.
@@ -95,122 +84,122 @@ public class ZFBPayCallbackAction extends UActionSupport {
 
     @Action("payCallback")
     public void payCallback() {
-        try {
-            //base64解码
-            Log.i("收到<支付宝>回调:" + urlDecord() + ",\r\n sign = " + sign);
-            //获取订单信息
-            UOrder order = orderManager.getOrder(Long.parseLong(out_trade_no));
-            //判断是否为重复订单
-            if (order == null || order.getState() == PayState.STATE_SUC) {
-                Log.i("<支付宝>订单[" + out_trade_no + "]重复 或不存在:" + urlDecord());
-                return;
-            }
-            //验签
-            UChannel channel = order.getChannel();
-            Log.i("支付宝开始验签,urlDecord() =" + urlDecord());
-            boolean signVerified = AlipaySignature.rsaCheckV1(urlDecord(), channel.getCpPayKey(), "UTF-8", "RSA2");
-            if (!signVerified) {
-                Log.i("<支付宝>回调验签失败:" + urlDecord());
-                renderText("failure");
-                return;
-            }
-            //判断金额
-            int amount = Integer.parseInt(total_amount);
-            if (amount != order.getMoney()) {
-                Log.i("<支付宝>订单金额不等于实际金额,按照实际金额[" + order.getMoney() + "]发奖:" + urlDecord());
-                order.setProductName("com.muzhiyouwan.bzddt_any");
-                order.setMoney(amount);
-            }
-            //判断appId是否一致
-            if (!app_id.equals(channel.getCpAppID())) {
-                Log.i("<支付宝>appId不一致 , 配置的appID 是" + channel.getCpAppID() + ":" + urlDecord());
-                renderText("failure");
-                return;
-            }
-            //通知发奖
-            order.setChannelOrderID(trade_no);
-            SendAgent.sendCallbackToServer(this.orderManager, order);
-            Log.i("<支付宝>订单充值成功:" + urlDecord());
-        } catch (Exception e) {
-            e.printStackTrace();
-            Log.i("<支付宝>充值订单失败 , e =" + e.getMessage());
-            renderText("failure");
-        }
+//        try {
+//            //base64解码
+//            Log.i("收到<支付宝>回调:" + urlDecord() + ",\r\n sign = " + sign);
+//            //获取订单信息
+//            UOrder order = orderManager.getOrder(Long.parseLong(out_trade_no));
+//            //判断是否为重复订单
+//            if (order == null || order.getState() == PayState.STATE_SUC) {
+//                Log.i("<支付宝>订单[" + out_trade_no + "]重复 或不存在:" + urlDecord());
+//                return;
+//            }
+//            //验签
+//            UChannel channel = order.getChannel();
+//            Log.i("支付宝开始验签,urlDecord() =" + urlDecord());
+//            boolean signVerified = AlipaySignature.rsaCheckV1(urlDecord(), channel.getCpPayKey(), "UTF-8", "RSA2");
+//            if (!signVerified) {
+//                Log.i("<支付宝>回调验签失败:" + urlDecord());
+//                renderText("failure");
+//                return;
+//            }
+//            //判断金额
+//            int amount = Integer.parseInt(total_amount);
+//            if (amount != order.getMoney()) {
+//                Log.i("<支付宝>订单金额不等于实际金额,按照实际金额[" + order.getMoney() + "]发奖:" + urlDecord());
+//                order.setProductName("com.muzhiyouwan.bzddt_any");
+//                order.setMoney(amount);
+//            }
+//            //判断appId是否一致
+//            if (!app_id.equals(channel.getCpAppID())) {
+//                Log.i("<支付宝>appId不一致 , 配置的appID 是" + channel.getCpAppID() + ":" + urlDecord());
+//                renderText("failure");
+//                return;
+//            }
+//            //通知发奖
+//            order.setChannelOrderID(trade_no);
+//            SendAgent.sendCallbackToServer(this.orderManager, order);
+//            Log.i("<支付宝>订单充值成功:" + urlDecord());
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            Log.i("<支付宝>充值订单失败 , e =" + e.getMessage());
+//            renderText("failure");
+//        }
     }
 
     @Action("getZFBFriends")
     public void getZFBFriends() {
-        try {
-            long ms = System.currentTimeMillis();
-            Log.i("开始获取<支付宝>好友: " + this + ",0代表不展示自己 , 其他代表展示自己");
-            UUser user = userManager.getUser(Integer.parseInt(openID));
-            if (user == null) {
-                Log.i("<支付宝>获取好友失败 : " + this + ",查无此人");
-                renderState(StateCode.CODE_USER_NONE, JSONObject.fromObject("{msg:\"用户不存在\"}"));
-                return;
-            }
-            AlipayClient client = ZFBSDK.getClient(new ZFBSDK.Params(user.getChannel()));
-            AlipaySocialBaseRelationFriendsQueryRequest request = new AlipaySocialBaseRelationFriendsQueryRequest();
-            request.setBizContent("{" +
-                    " \"get_type\":" + getType + "," +
-                    " \"include_self\":" + (isShowSelf != 0) + "" +
-                    " }");
-            AlipaySocialBaseRelationFriendsQueryResponse response = client.execute(request, user.getChannelUserName());
-            if (response.isSuccess()) {
-                List<FriendListVO> friendList = response.getFriendList();
-                Log.i("<支付宝>获取好友成功 开始处理 :" + this);
-                JSONArray jsonArray = new JSONArray();
-                for (FriendListVO friendListVO : friendList) {
-                    String userId = friendListVO.getUserId();
-                    JSONObject jsonObject = new JSONObject();
-                    jsonObject.put("head_img", friendListVO.getHeadImg());
-                    jsonObject.put("real_friend", friendListVO.getRealFriend());
-                    jsonObject.put("user_id", friendListVO.getUserId());
-                    jsonObject.put("view_name", friendListVO.getViewName());
-                    UUser friend = userManager.getUserByCpID(user.getAppID(), user.getChannelID(), userId);
-                    if (friend == null) {
-                        Log.i("<支付宝>获取好友,未在用户内找到该支付宝用户 : " + this + ",支付宝userId = " + userId);
-                        jsonObject.put("openID", "-1");
-                    } else {
-                        jsonObject.put("openID", friend.getId());
-                    }
-                    jsonArray.add(jsonObject);
-                }
-                renderState(StateCode.CODE_AUTH_SUCCESS, jsonArray);
-                Log.i("<支付宝>获取好友发送成功 : " + this + ", friendList = " + jsonArray.toString() + ", 耗时 " + (System.currentTimeMillis() - ms) + "ms");
-            } else {
-                Log.i("<支付宝>获取好友失败 : " + this + " , response = " + response.getBody() + ", 耗时 " + (System.currentTimeMillis() - ms) + "ms");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            renderState(StateCode.CODE_AUTH_FAILED, JSONObject.fromObject("{msg:\"其他错误\"}"));
-        }
+//        try {
+//            long ms = System.currentTimeMillis();
+//            Log.i("开始获取<支付宝>好友: " + this + ",0代表不展示自己 , 其他代表展示自己");
+//            UUser user = userManager.getUser(Integer.parseInt(openID));
+//            if (user == null) {
+//                Log.i("<支付宝>获取好友失败 : " + this + ",查无此人");
+//                renderState(StateCode.CODE_USER_NONE, JSONObject.fromObject("{msg:\"用户不存在\"}"));
+//                return;
+//            }
+//            AlipayClient client = ZFBSDK.getClient(new ZFBSDK.Params(user.getChannel()));
+//            AlipaySocialBaseRelationFriendsQueryRequest request = new AlipaySocialBaseRelationFriendsQueryRequest();
+//            request.setBizContent("{" +
+//                    " \"get_type\":" + getType + "," +
+//                    " \"include_self\":" + (isShowSelf != 0) + "" +
+//                    " }");
+//            AlipaySocialBaseRelationFriendsQueryResponse response = client.execute(request, user.getChannelUserName());
+//            if (response.isSuccess()) {
+//                List<FriendListVO> friendList = response.getFriendList();
+//                Log.i("<支付宝>获取好友成功 开始处理 :" + this);
+//                JSONArray jsonArray = new JSONArray();
+//                for (FriendListVO friendListVO : friendList) {
+//                    String userId = friendListVO.getUserId();
+//                    JSONObject jsonObject = new JSONObject();
+//                    jsonObject.put("head_img", friendListVO.getHeadImg());
+//                    jsonObject.put("real_friend", friendListVO.getRealFriend());
+//                    jsonObject.put("user_id", friendListVO.getUserId());
+//                    jsonObject.put("view_name", friendListVO.getViewName());
+//                    UUser friend = userManager.getUserByCpID(user.getAppID(), user.getChannelID(), userId);
+//                    if (friend == null) {
+//                        Log.i("<支付宝>获取好友,未在用户内找到该支付宝用户 : " + this + ",支付宝userId = " + userId);
+//                        jsonObject.put("openID", "-1");
+//                    } else {
+//                        jsonObject.put("openID", friend.getId());
+//                    }
+//                    jsonArray.add(jsonObject);
+//                }
+//                renderState(StateCode.CODE_AUTH_SUCCESS, jsonArray);
+//                Log.i("<支付宝>获取好友发送成功 : " + this + ", friendList = " + jsonArray.toString() + ", 耗时 " + (System.currentTimeMillis() - ms) + "ms");
+//            } else {
+//                Log.i("<支付宝>获取好友失败 : " + this + " , response = " + response.getBody() + ", 耗时 " + (System.currentTimeMillis() - ms) + "ms");
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            renderState(StateCode.CODE_AUTH_FAILED, JSONObject.fromObject("{msg:\"其他错误\"}"));
+//        }
     }
 
     @Action("getZFBUserInfo")
     public void getZFBUserInfo() {
-        try {
-            long ms = System.currentTimeMillis();
-            Log.i("开始获取<支付宝>用户信息: " + this);
-            UUser user = userManager.getUser(Integer.parseInt(openID));
-            if (user == null) {
-                Log.i("<支付宝>获取自身信息失败 : " + this + ",查无此人");
-                renderState(StateCode.CODE_USER_NONE, JSONObject.fromObject("{msg:\"用户不存在\"}"));
-                return;
-            }
-            AlipayUserInfoShareRequest request = new AlipayUserInfoShareRequest();
-            AlipayClient client = ZFBSDK.getClient(new ZFBSDK.Params(user.getChannel()));
-            AlipayUserInfoShareResponse userinfoShareResponse = client.execute(request, user.getChannelUserName());
-            if (userinfoShareResponse.isSuccess()) {
-                Log.i("获取<支付宝>用户信息成功: " + this + " , 开始解析 :" + userinfoShareResponse.getBody());
-                renderState(StateCode.CODE_AUTH_SUCCESS, JSONObject.fromObject(userinfoShareResponse.getBody()));
-                Log.i("获取<支付宝>用户信息发送成功: " + this + ", 耗时 " + (System.currentTimeMillis() - ms) + "ms");
-            } else {
-                Log.i("获取<支付宝>用户信息失败: " + this + ", body = " + userinfoShareResponse.getBody() + ", 耗时 " + (System.currentTimeMillis() - ms) + "ms");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+//        try {
+//            long ms = System.currentTimeMillis();
+//            Log.i("开始获取<支付宝>用户信息: " + this);
+//            UUser user = userManager.getUser(Integer.parseInt(openID));
+//            if (user == null) {
+//                Log.i("<支付宝>获取自身信息失败 : " + this + ",查无此人");
+//                renderState(StateCode.CODE_USER_NONE, JSONObject.fromObject("{msg:\"用户不存在\"}"));
+//                return;
+//            }
+//            AlipayUserInfoShareRequest request = new AlipayUserInfoShareRequest();
+//            AlipayClient client = ZFBSDK.getClient(new ZFBSDK.Params(user.getChannel()));
+//            AlipayUserInfoShareResponse userinfoShareResponse = client.execute(request, user.getChannelUserName());
+//            if (userinfoShareResponse.isSuccess()) {
+//                Log.i("获取<支付宝>用户信息成功: " + this + " , 开始解析 :" + userinfoShareResponse.getBody());
+//                renderState(StateCode.CODE_AUTH_SUCCESS, JSONObject.fromObject(userinfoShareResponse.getBody()));
+//                Log.i("获取<支付宝>用户信息发送成功: " + this + ", 耗时 " + (System.currentTimeMillis() - ms) + "ms");
+//            } else {
+//                Log.i("获取<支付宝>用户信息失败: " + this + ", body = " + userinfoShareResponse.getBody() + ", 耗时 " + (System.currentTimeMillis() - ms) + "ms");
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
     }
 
     /**
@@ -218,39 +207,39 @@ public class ZFBPayCallbackAction extends UActionSupport {
      */
     @Action("ZFBShareChart")
     public void shareChat() {
-        try {
-            long ms = System.currentTimeMillis();
-            Log.i("<支付宝>开始静默分享 : " + this);
-            UUser user = userManager.getUser(Integer.parseInt(openID));
-            if (user == null) {
-                Log.i("<支付宝>静默分享失败 : " + this + ",查无此人");
-                renderState(StateCode.CODE_USER_NONE, JSONObject.fromObject("{msg:\"用户不存在\"}"));
-                return;
-            }
-            AlipayClient client = ZFBSDK.getClient(new ZFBSDK.Params(user.getChannel()));
-            AlipaySocialBaseChatSendRequest request = new AlipaySocialBaseChatSendRequest();
-            long id = IDGenerator.getInstance().nextOrderID();
-            JSONObject bizContent = new JSONObject();
-            bizContent.put("client_msg_id", id);
-            bizContent.put("receiver_id", receiver_id);
-            bizContent.put("receiver_usertype", receiver_usertype);
-            bizContent.put("template_type", template_type);
-            bizContent.put("template_data", template_data);
-            bizContent.put("link", link);
-            bizContent.put("biz_memo", biz_memo);
-            request.setBizContent(bizContent.toString());
-            AlipaySocialBaseChatSendResponse response = client.execute(request, user.getChannelUserName());
-            if (response.isSuccess()) {
-                renderState(StateCode.CODE_AUTH_SUCCESS, JSONObject.fromObject(response.getBody()));
-                Log.i("<支付宝>静默分享成功! params = " + this.toString() + ", body = " + response.getBody() + ", 耗时:" + (System.currentTimeMillis() - ms) + "ms");
-            } else {
-                Log.i("<支付宝>静默分享失败! params = " + this.toString() + ", body = " + response.getBody() + ", 耗时:" + (System.currentTimeMillis() - ms) + "ms");
-                renderState(StateCode.CODE_AUTH_FAILED, response.getBody());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            renderState(StateCode.CODE_AUTH_FAILED, "系统错误 e=" + e.getMessage());
-        }
+//        try {
+//            long ms = System.currentTimeMillis();
+//            Log.i("<支付宝>开始静默分享 : " + this);
+//            UUser user = userManager.getUser(Integer.parseInt(openID));
+//            if (user == null) {
+//                Log.i("<支付宝>静默分享失败 : " + this + ",查无此人");
+//                renderState(StateCode.CODE_USER_NONE, JSONObject.fromObject("{msg:\"用户不存在\"}"));
+//                return;
+//            }
+//            AlipayClient client = ZFBSDK.getClient(new ZFBSDK.Params(user.getChannel()));
+//            AlipaySocialBaseChatSendRequest request = new AlipaySocialBaseChatSendRequest();
+//            long id = IDGenerator.getInstance().nextOrderID();
+//            JSONObject bizContent = new JSONObject();
+//            bizContent.put("client_msg_id", id);
+//            bizContent.put("receiver_id", receiver_id);
+//            bizContent.put("receiver_usertype", receiver_usertype);
+//            bizContent.put("template_type", template_type);
+//            bizContent.put("template_data", template_data);
+//            bizContent.put("link", link);
+//            bizContent.put("biz_memo", biz_memo);
+//            request.setBizContent(bizContent.toString());
+//            AlipaySocialBaseChatSendResponse response = client.execute(request, user.getChannelUserName());
+//            if (response.isSuccess()) {
+//                renderState(StateCode.CODE_AUTH_SUCCESS, JSONObject.fromObject(response.getBody()));
+//                Log.i("<支付宝>静默分享成功! params = " + this.toString() + ", body = " + response.getBody() + ", 耗时:" + (System.currentTimeMillis() - ms) + "ms");
+//            } else {
+//                Log.i("<支付宝>静默分享失败! params = " + this.toString() + ", body = " + response.getBody() + ", 耗时:" + (System.currentTimeMillis() - ms) + "ms");
+//                renderState(StateCode.CODE_AUTH_FAILED, response.getBody());
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            renderState(StateCode.CODE_AUTH_FAILED, "系统错误 e=" + e.getMessage());
+//        }
 
     }
 
@@ -259,86 +248,86 @@ public class ZFBPayCallbackAction extends UActionSupport {
      */
     @Action("createCash")
     public void createCash() {
-        try {
-            Map<String, String> params = new HashMap<>();
-            params.put("coupon_name", coupon_name);
-            params.put("prize_type", prize_type);
-            params.put("total_money", total_money);
-            params.put("total_num", total_num);
-            params.put("prize_msg", prize_msg);
-            params.put("start_time", start_time);
-            params.put("end_time", end_time);
-            params.put("merchant_link", merchant_link);
-            params.put("channelId", channelId);
-            String content = AlipaySignature.getSignCheckContentV1(params);
-            Log.i("收到<支付宝>创建现金红包 , params = " + content);
-            UChannel channel = UChannelCache.getInstance().get(Integer.valueOf(channelId));
-            if (channel == null) {
-                Log.i("<支付宝>创建现金红包出错 , channel无法查找 =" + this.channelId);
-                renderState(StateCode.CODE_CHANNEL_NONE, JSONObject.fromObject("{msg:\"未知错误\"}"));
-                return;
-            }
-            if (!validParams(content, channel)) {
-                Log.i("<支付宝>创建现金红包出错 , 验签失败");
-                renderState(StateCode.CODE_SIGN_ERROR, JSONObject.fromObject("{msg:\"验签失败\"}"));
-                return;
-            }
-            //全部成功开始创建
-            AlipayClient alipayClient = ZFBSDK.getClient(new ZFBSDK.Params(channel));
-            AlipayMarketingCampaignCashCreateRequest request = new
-                    AlipayMarketingCampaignCashCreateRequest();
-            request.setBizContent(JSONObject.fromObject(params).toString());
-            AlipayMarketingCampaignCashCreateResponse response = alipayClient.execute(request);
-            if (response.isSuccess()) {
-                renderState(StateCode.CODE_AUTH_SUCCESS, JSONObject.fromObject(response.getBody()));
-                Log.i("<支付宝>创建现金红包成功 , body = " + response.getBody());
-            } else {
-                renderState(StateCode.CODE_AUTH_FAILED, JSONObject.fromObject("{msg:\"支付宝返回错误\"}"));
-                Log.i("<支付宝>创建现金红包失败, 支付宝返回错误 , body = " + response.getBody());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            renderState(StateCode.CODE_AUTH_FAILED, JSONObject.fromObject("{msg:\"系统出错\"}"));
-        }
+//        try {
+//            Map<String, String> params = new HashMap<>();
+//            params.put("coupon_name", coupon_name);
+//            params.put("prize_type", prize_type);
+//            params.put("total_money", total_money);
+//            params.put("total_num", total_num);
+//            params.put("prize_msg", prize_msg);
+//            params.put("start_time", start_time);
+//            params.put("end_time", end_time);
+//            params.put("merchant_link", merchant_link);
+//            params.put("channelId", channelId);
+//            String content = AlipaySignature.getSignCheckContentV1(params);
+//            Log.i("收到<支付宝>创建现金红包 , params = " + content);
+//            UChannel channel = UChannelCache.getInstance().get(Integer.valueOf(channelId));
+//            if (channel == null) {
+//                Log.i("<支付宝>创建现金红包出错 , channel无法查找 =" + this.channelId);
+//                renderState(StateCode.CODE_CHANNEL_NONE, JSONObject.fromObject("{msg:\"未知错误\"}"));
+//                return;
+//            }
+//            if (!validParams(content, channel)) {
+//                Log.i("<支付宝>创建现金红包出错 , 验签失败");
+//                renderState(StateCode.CODE_SIGN_ERROR, JSONObject.fromObject("{msg:\"验签失败\"}"));
+//                return;
+//            }
+//            //全部成功开始创建
+//            AlipayClient alipayClient = ZFBSDK.getClient(new ZFBSDK.Params(channel));
+//            AlipayMarketingCampaignCashCreateRequest request = new
+//                    AlipayMarketingCampaignCashCreateRequest();
+//            request.setBizContent(JSONObject.fromObject(params).toString());
+//            AlipayMarketingCampaignCashCreateResponse response = alipayClient.execute(request);
+//            if (response.isSuccess()) {
+//                renderState(StateCode.CODE_AUTH_SUCCESS, JSONObject.fromObject(response.getBody()));
+//                Log.i("<支付宝>创建现金红包成功 , body = " + response.getBody());
+//            } else {
+//                renderState(StateCode.CODE_AUTH_FAILED, JSONObject.fromObject("{msg:\"支付宝返回错误\"}"));
+//                Log.i("<支付宝>创建现金红包失败, 支付宝返回错误 , body = " + response.getBody());
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            renderState(StateCode.CODE_AUTH_FAILED, JSONObject.fromObject("{msg:\"系统出错\"}"));
+//        }
     }
 
     @Action("triggerCash")
     public void triggerCash() {
-        try {
-            Map<String, String> map = new HashMap<>();
-            map.put("crowd_no", this.crowd_no);
-            map.put("openID", this.openID);
-            String content = AlipaySignature.getSignCheckContentV1(map);
-            UUser user = userManager.getUser(Integer.parseInt(openID));
-            Log.i("收到<支付宝>触发现金红包 , params = " + map);
-            if (user == null) {
-                Log.i("<支付宝>触发现金红包出错 : " + this + ",查无此人");
-                renderState(StateCode.CODE_USER_NONE, JSONObject.fromObject("{msg:\"用户不存在\"}"));
-                return;
-            }
-            if (!validParams(content, user.getChannel())) {
-                Log.i("<支付宝>触发现金红包出错 , 验签失败");
-                renderState(StateCode.CODE_SIGN_ERROR, JSONObject.fromObject("{msg:\"验签失败\"}"));
-                return;
-            }
-            //开始创建
-            AlipayClient alipayClient = ZFBSDK.getClient(new ZFBSDK.Params(user.getChannel()));
-            AlipayMarketingCampaignCashTriggerRequest request = new AlipayMarketingCampaignCashTriggerRequest();
-            map.remove("openID");
-            map.put("user_id",user.getChannelUserID());
-            request.setBizContent(JSONObject.fromObject(map).toString());
-            AlipayMarketingCampaignCashTriggerResponse response = alipayClient.execute(request);
-            if (response.isSuccess()) {
-                renderState(StateCode.CODE_AUTH_SUCCESS, JSONObject.fromObject(response.getBody()));
-                Log.i("<支付宝>触发现金红包成功 , body = " + response.getBody());
-            } else {
-                renderState(StateCode.CODE_AUTH_FAILED, JSONObject.fromObject("{msg:\"支付宝返回错误\"}"));
-                Log.i("<支付宝>触发现金红包失败, 支付宝返回错误 , body = " + response.getBody());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            renderState(StateCode.CODE_AUTH_FAILED, JSONObject.fromObject("{msg:\"系统出错\"}"));
-        }
+//        try {
+//            Map<String, String> map = new HashMap<>();
+//            map.put("crowd_no", this.crowd_no);
+//            map.put("openID", this.openID);
+//            String content = AlipaySignature.getSignCheckContentV1(map);
+//            UUser user = userManager.getUser(Integer.parseInt(openID));
+//            Log.i("收到<支付宝>触发现金红包 , params = " + map);
+//            if (user == null) {
+//                Log.i("<支付宝>触发现金红包出错 : " + this + ",查无此人");
+//                renderState(StateCode.CODE_USER_NONE, JSONObject.fromObject("{msg:\"用户不存在\"}"));
+//                return;
+//            }
+//            if (!validParams(content, user.getChannel())) {
+//                Log.i("<支付宝>触发现金红包出错 , 验签失败");
+//                renderState(StateCode.CODE_SIGN_ERROR, JSONObject.fromObject("{msg:\"验签失败\"}"));
+//                return;
+//            }
+//            //开始创建
+//            AlipayClient alipayClient = ZFBSDK.getClient(new ZFBSDK.Params(user.getChannel()));
+//            AlipayMarketingCampaignCashTriggerRequest request = new AlipayMarketingCampaignCashTriggerRequest();
+//            map.remove("openID");
+//            map.put("user_id",user.getChannelUserID());
+//            request.setBizContent(JSONObject.fromObject(map).toString());
+//            AlipayMarketingCampaignCashTriggerResponse response = alipayClient.execute(request);
+//            if (response.isSuccess()) {
+//                renderState(StateCode.CODE_AUTH_SUCCESS, JSONObject.fromObject(response.getBody()));
+//                Log.i("<支付宝>触发现金红包成功 , body = " + response.getBody());
+//            } else {
+//                renderState(StateCode.CODE_AUTH_FAILED, JSONObject.fromObject("{msg:\"支付宝返回错误\"}"));
+//                Log.i("<支付宝>触发现金红包失败, 支付宝返回错误 , body = " + response.getBody());
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            renderState(StateCode.CODE_AUTH_FAILED, JSONObject.fromObject("{msg:\"系统出错\"}"));
+//        }
     }
 
     /**
